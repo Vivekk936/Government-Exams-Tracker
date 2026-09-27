@@ -1,0 +1,18 @@
+# Python
+__pycache__/
+*.py[cod]
+
+# Virtual environment
+.venv/
+venv/
+
+# IDE
+.idea/
+.vscode/
+
+# Temporary files
+*_temp.pdf
+*.tmp
+
+# Local database
+data/exams.db
