@@ -2,9 +2,10 @@ name: Government Exam Scraper
 
 on:
   schedule:
-    # 2:00 AM IST
+    # 2:00 AM IST = 20:30 UTC
     - cron: "30 20 * * *"
 
+  # Allows you to run the workflow manually
   workflow_dispatch:
 
 permissions:
@@ -16,23 +17,39 @@ jobs:
 
     steps:
 
+      # -----------------------------------
+      # 1. Checkout repository
+      # -----------------------------------
       - name: Checkout repository
         uses: actions/checkout@v6
 
+      # -----------------------------------
+      # 2. Setup Python
+      # -----------------------------------
       - name: Setup Python
         uses: actions/setup-python@v6
         with:
           python-version: "3.12"
 
+      # -----------------------------------
+      # 3. Install dependencies
+      # -----------------------------------
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
+          pip install kaggle
 
+      # -----------------------------------
+      # 4. Run government exam scraper
+      # -----------------------------------
       - name: Run scraper
         run: |
           python -m src.scraper
 
+      # -----------------------------------
+      # 5. Check generated data
+      # -----------------------------------
       - name: Check generated data
         run: |
           echo "Generated files:"
@@ -42,6 +59,33 @@ jobs:
           echo "CSV records:"
           wc -l data/exams.csv
 
+      # -----------------------------------
+      # 6. Prepare Kaggle dataset
+      # -----------------------------------
+      - name: Prepare Kaggle dataset
+        run: |
+          mkdir -p kaggle_dataset
+
+          cp data/exams.csv kaggle_dataset/exams.csv
+
+          cp dataset-metadata.json kaggle_dataset/dataset-metadata.json
+
+      # -----------------------------------
+      # 7. Upload updated dataset to Kaggle
+      # -----------------------------------
+      - name: Upload dataset to Kaggle
+        env:
+          KAGGLE_API_TOKEN: ${{ secrets.KAGGLE_API_TOKEN }}
+        run: |
+          kaggle datasets version \
+            -p kaggle_dataset \
+            -m "Automatic update $(date -u '+%Y-%m-%d %H:%M UTC')" \
+            -t \
+            -q
+
+      # -----------------------------------
+      # 8. Save updated CSV to GitHub
+      # -----------------------------------
       - name: Save updated CSV
         run: |
           git config user.name "github-actions[bot]"
